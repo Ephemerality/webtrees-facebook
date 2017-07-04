@@ -16,6 +16,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+use Fisharebest\Webtrees\Bootstrap4;
 use Fisharebest\Webtrees\Filter;
 use Fisharebest\Webtrees\Functions\FunctionsEdit;
 use Fisharebest\Webtrees\Functions\FunctionsPrint;
@@ -156,8 +157,8 @@ $usernameValidationAttrs = 'pattern="[.a-zA-Z0-9]{5,}" title="' . I18N::translat
           $this->indiField('preApproved[new]['.$tree->getTreeId().'][gedcomid]',
                            '', $tree->getNameUrl()), '</td>',
           '<td class="'.$class.'">',
-          FunctionsEdit::selectEditControl('preApproved[new]['.$tree->getTreeId().'][canedit]',
-                              $this->get_edit_options(), NULL, NULL), '</td>';
+          Bootstrap4::select($this->get_edit_options(), NULL, ['name' => 'preApproved[new]['.$tree->getTreeId().'][canedit]']),
+          '</td>';
         }
       ?>
     </tr>
@@ -178,8 +179,7 @@ $usernameValidationAttrs = 'pattern="[.a-zA-Z0-9]{5,}" title="' . I18N::translat
             $this->indiField('preApproved['.$fbUsername.']['.$tree->getTreeId().'][gedcomid]',
                              @$details[$tree->getTreeId()]['gedcomid'], $tree->getNameUrl()), '</td>',
             '<td class="'.$class.'">',
-            FunctionsEdit::selectEditControl('preApproved['.$fbUsername.']['.$tree->getTreeId().'][canedit]',
-                                $this->get_edit_options(), NULL, @$details[$tree->getTreeId()]['canedit']),
+            Bootstrap4::select($this->get_edit_options(), NULL, ['name' => 'preApproved['.$fbUsername.']['.$tree->getTreeId().'][canedit]', @$details[$tree->getTreeId()]['canedit']]),
 	    '</td>';
           }
           echo '
