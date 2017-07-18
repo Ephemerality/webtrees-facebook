@@ -30,7 +30,6 @@ define('WT_REGEX_USERNAME', '[^<>"%{};]+');
 use Fisharebest\Webtrees\Auth;
 use Fisharebest\Webtrees\Controller\PageController;
 use Fisharebest\Webtrees\Database;
-use Fisharebest\Webtrees\File;
 use Fisharebest\Webtrees\Filter;
 use Fisharebest\Webtrees\FlashMessages;
 use Fisharebest\Webtrees\Functions\FunctionsEdit;
@@ -44,6 +43,7 @@ use Fisharebest\Webtrees\User;
 use Fisharebest\Webtrees\Module\AbstractModule;
 use Fisharebest\Webtrees\Module\ModuleConfigInterface;
 use Fisharebest\Webtrees\Module\ModuleMenuInterface;
+use GuzzleHttp\Client;
 
 class FacebookModule extends AbstractModule implements ModuleConfigInterface, ModuleMenuInterface {
     const scope = 'user_birthday,user_hometown,user_location,email,user_gender,user_link';
@@ -219,6 +219,7 @@ class FacebookModule extends AbstractModule implements ModuleConfigInterface, Mo
     }
 
     private function connect() {
+        $client = new Client(['base_uri' => 'https://graph.facebook.com']);
         $url = Filter::post('url', NULL, Filter::get('url', NULL, ''));
         // If we’ve clicked login from the login page, we don’t want to go back there.
         if (strpos($url, 'login.php') === 0
@@ -267,10 +268,10 @@ class FacebookModule extends AbstractModule implements ModuleConfigInterface, Mo
             echo("<script> window.location.href='" . $dialog_url . "'</script>");
         } else if (Session::has('facebook_access_token')) {
             // User has already authorized the app and we have a token so get their info.
-            $graph_url = "https://graph.facebook.com/" . self::api_dir . "me?fields=" . self::user_fields . "&access_token="
+            $graph_url = self::api_dir . "me?fields=id,birthday,email,first_name,last_name,gender,hometown,link,locale,timezone,updated_time,verified&access_token="
                 . Session::get('facebook_access_token');
-            $response = File::fetchUrl($graph_url);
-            if ($response === FALSE) {
+            $response = $client->get($graph_url);
+            if ($response->getStatusCode() !== 200) {
                 Log::addErrorLog("Facebook: Access token is no longer valid");
                 // Clear the state and try again with a new token.
                 try {
@@ -282,34 +283,34 @@ class FacebookModule extends AbstractModule implements ModuleConfigInterface, Mo
                 exit;
             }
 
-            $user = json_decode($response);
+            $user = json_decode($response->getBody()->getContents());
             $this->login_or_register($user, $url);
         } else if (Session::has('facebook_state') && (Session::get('facebook_state') === $_REQUEST['state'])) {
             // User has already been redirected to login dialog.
             // Exchange the code for an access token.
-            $token_url = "https://graph.facebook.com/" . self::api_dir . "oauth/access_token?"
+            $token_url = self::api_dir . "oauth/access_token?"
                 . "client_id=" . $app_id . "&redirect_uri=" . urlencode($connect_url)
                 . "&client_secret=" . $app_secret . "&code=" . $code;
 
-            $response = File::fetchUrl($token_url);
-            if ($response === FALSE) {
+            $response = $client->get($token_url);
+            if ($response->getStatusCode() !== 200) {
                 Log::addErrorLog("Facebook: Couldn't exchange the code for an access token");
                 $this->error_page(I18N::translate("Your Facebook code is invalid. This can happen if you hit back in your browser after login or if Facebook logins have been setup incorrectly by the administrator."));
             }
-            $params = json_decode($response);
+            $params = json_decode($response->getBody()->getContents());
             if (!isset($params->access_token)) {
                 Log::addErrorLog("Facebook: The access token was empty");
                 $this->error_page(I18N::translate("Your Facebook code is invalid. This can happen if you hit back in your browser after login or if Facebook logins have been setup incorrectly by the administrator."));
             }
 
             Session::put('facebook_access_token', $params->access_token);
-            $graph_url = "https://graph.facebook.com/" . self::api_dir . "me?fields=" . self::user_fields . "&access_token="
+            $graph_url = self::api_dir . "me?fields=id,birthday,email,first_name,last_name,gender,hometown,link,locale,timezone,updated_time,verified&access_token="
                 . Session::get('facebook_access_token');
-            $meResponse = File::fetchUrl($graph_url);
-            if ($meResponse === FALSE) {
+            $meResponse = $client->get($graph_url);
+            if ($meResponse->getStatusCode() !== 200) {
                 $this->error_page(I18N::translate("Could not fetch your information from Facebook. Please try again."));
             }
-            $user = json_decode($meResponse);
+            $user = json_decode($meResponse->getBody()->getContents());
             $this->login_or_register($user, $url);
         } else {
             $this->error_page(I18N::translate("The state does not match. You may been tricked to load this page."));
@@ -387,8 +388,8 @@ class FacebookModule extends AbstractModule implements ModuleConfigInterface, Mo
         }
         $graph_url = "https://graph.facebook.com/" . self::api_dir . "me/friends?fields=first_name,last_name,name,id&access_token="
             . Session::get('facebook_access_token');
-        $friendsResponse = File::fetchUrl($graph_url);
-        if ($friendsResponse === FALSE) {
+        $friendsResponse =$client->get($graph_url);
+        if ($friendsResponse->getStatusCode() !== 200) {
             $this->error_page(I18N::translate("Could not fetch your friends from Facebook. Note that this feature won't work for Facebook Apps created after 2014-04-30 due to a Facebook policy change."));
         }
 
@@ -397,7 +398,7 @@ class FacebookModule extends AbstractModule implements ModuleConfigInterface, Mo
             ->setPageTitle($this->getTitle())
             ->pageHeader();
 
-        $friends = json_decode($friendsResponse);
+        $friends = json_decode($friendsResponse->getBody()->getContents());
         if (empty($friends->data)) {
             $this->error_page(I18N::translate("No friend data"));
             return;
