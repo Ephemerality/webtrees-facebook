@@ -525,7 +525,7 @@ class FacebookModule extends AbstractModule implements ModuleConfigInterface, Mo
                     $user = User::find($user_id);
                     $user->setPreference(self::user_setting_facebook_username, $this->cleanseFacebookUserID($facebookUser->id));
                     // redirect to the homepage/$url
-                    header('Location: ' . WT_BASE_URL . $url);
+                    header('Location: ' . WT_BASE_URL);
                     return;
             }
             $this->error_page($message);
