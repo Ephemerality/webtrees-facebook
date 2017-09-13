@@ -50,7 +50,7 @@ class FacebookModule extends AbstractModule implements ModuleConfigInterface, Mo
     const user_fields = 'id,birthday,email,name,first_name,last_name,gender,hometown,link,locale,timezone,updated_time,verified';
     const user_setting_facebook_username = 'facebook_username';
     const profile_photo_large_width = 1024;
-    const api_dir = "v2.9/"; // TODO: make an admin preference so new installs can use this module.
+    const api_dir = "v2.10/"; // TODO: make an admin preference so new installs can use this module.
 
     private $hideStandardForms = false;
 
