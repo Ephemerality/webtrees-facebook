@@ -60,7 +60,7 @@ class FacebookModule extends AbstractModule implements ModuleConfigInterface, Mo
 
     // Implement WT_Module_Config
     public function getConfigLink() {
-        return 'module.php?mod='.$this->getName().'&amp;mod_action=admin';
+        return 'module.php?mod='.$this->getName().'&mod_action=admin';
     }
 
     // Extend WT_Module
